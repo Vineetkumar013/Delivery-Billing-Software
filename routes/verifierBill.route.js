@@ -5,10 +5,14 @@ const {
     updateBillingPicker,
     getAllBillOfPicker,
     assignBillToPacker,
+    Verifysignup,
+    Verifylogin,
 } = require("../controllers/verifyBill.controller");
 
 // // Get all verifier-bills
 router.get("/verifier-bills", getAllBillOfPicker);
+router.post("/signup", Verifysignup);
+router.post("/login", Verifylogin);
 
 // // Get product by ID
 // router.get("/verifier-bills/:id", getVerifierBill);

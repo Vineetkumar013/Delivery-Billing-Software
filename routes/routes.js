@@ -5,15 +5,15 @@ const router = express.Router();
 router.use("/admin", require("../routes/admin.route"));
 router.use("/auth", require("../routes/auth.route"));
 router.use("/", require("../routes/user.route"));
-router.use("/", require("../routes/verifierBill.route"));
+router.use("/verify", require("../routes/verifierBill.route"));
 router.use("/", require("../routes/role.route"));
 router.use("/bills", require("../routes/billing.route"));
 router.use("/", require("../routes/billItem.route"));
-router.use("/", require("../routes/pickerBill.route"));
-router.use("/", require("../routes/packer.route"));
+router.use("/picker", require("../routes/pickerBill.route"));
+router.use("/packer", require("../routes/packer.route"));
 router.use("/help/", require("../routes/helpandsupport"));
 
-router.use("/", require("../routes/dispatch.route"));
+router.use("/dispatch", require("../routes/dispatch.route"));
 router.use("/", require("../routes/reason.route"));
 
 router.use("/", require("../routes/order.route"));
@@ -24,7 +24,7 @@ router.use("/faqs", require("../routes/faq.route"));
 // router.use("/", require("../routes/wholeSeller.route"));
 // router.use("/festival-offers", require("../routes/festival.route"));
 // router.use("/gift-boxes", require("../routes/giftBoxes.route"));
-router.use("/feedback", require("../routes/feedback.route"));
+router.use("/myreview", require("../routes/myReview.route"));
 router.use("/", require("../routes/vehicle.route"));
 
 module.exports = router;

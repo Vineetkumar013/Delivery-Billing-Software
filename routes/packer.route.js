@@ -4,10 +4,14 @@ const {
     updateBillingPacker,
     getAllBillOfPacker,
     assignBillToDispatch,
+    Packerlogin,
+    Packersignup,
 } = require("../controllers/packercontroller");
 const { authJwt } = require("../middleware");
 // Get all packer bills
 router.get("/packer-bills", getAllBillOfPacker);
+router.post("/login", Packerlogin);
+router.post("/signup", Packersignup);
 router.put("/assign-bill/dispatch/:id", assignBillToDispatch);
 // Create a new packer bill
 // router.post("/packer-bills", [authJwt.isAdmin], createPackerBill);

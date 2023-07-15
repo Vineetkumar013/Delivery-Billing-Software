@@ -6,6 +6,7 @@ const Admin = require("../models/admin");
 const mongoose = require("mongoose");
 const { query } = require("express");
 const ObjectId = mongoose.Types.ObjectId;
+
 const getOrders = async (req, res) => {
     try {
         const query = {};
@@ -57,7 +58,7 @@ const getOrders = async (req, res) => {
 
 const getOrderSummary = async (req, res) => {
     try {
-        const { startDate, endDate, userId, uid } = req.query;
+        const { startDate, endDate, userId, uid, status } = req.query;
         let query = {};
         if (startDate && endDate) {
             query.createdAt = {
@@ -70,6 +71,9 @@ const getOrderSummary = async (req, res) => {
         }
         if (uid) {
             query.uid = uid;
+        }
+        if (status) {
+            query.deliveryStatus = status;
         }
         console.log(query);
         const pipeline = [
@@ -128,7 +132,11 @@ const getOrderSummary = async (req, res) => {
 
         const result = await Order.aggregate(pipeline);
 
-        return createResponse(res, 200, "Orders found", result[0]);
+    if (result.length === 0 || result[0].orders.length === 0) {
+      return createResponse(res, 404, "No matching orders found");
+    }
+        
+        return createResponse(res, 200, result.length, "Orders found", result[0]);
     } catch (error) {
         console.error(error);
         return createResponse(res, 500, "Server Error");
@@ -295,6 +303,30 @@ const deleteOrder = async (req, res) => {
     }
 };
 
+// Today's Orders API - Get orders for today
+const TodayOrder = async (req, res) => {
+    try {
+        const { date } = req.query; // Date parameter passed in the query string
+
+        // Create a date range from the provided date to the next day
+        const startDate = new Date(date);
+        const endDate = new Date(date);
+        endDate.setDate(endDate.getDate() + 1);
+
+        // Query the database for orders delivered within the specified date range
+        const orders = await Order.find({
+            isDelivered: true,
+            deliveredAt: { $gte: startDate, $lt: endDate },
+        });
+
+        res.json({ orders });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "An error occurred" });
+    }
+};
+
+
 module.exports = {
     getOrderById,
     createOrder,
@@ -303,4 +335,5 @@ module.exports = {
     getOrders,
     getOrderSummary,
     deleteOrder,
+    TodayOrder
 };

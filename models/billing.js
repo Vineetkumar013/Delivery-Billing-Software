@@ -10,14 +10,14 @@ const billingSchema = new mongoose.Schema(
             type: String,
             default: "green",
         },
+        billingDate: {
+            type: Date,
+            required: true,
+        },
         billNumber: {
             type: String,
             unique: true,
             default: "",
-            required: true,
-        },
-        billingDate: {
-            type: Date,
             required: true,
         },
         billingAddress: {
@@ -62,11 +62,6 @@ const billingSchema = new mongoose.Schema(
             type: String,
             default: "",
         },
-
-        packing: {
-            type: String,
-            default: "",
-        },
         expectedDelivery: {
             type: Date,
         },
@@ -74,10 +69,17 @@ const billingSchema = new mongoose.Schema(
             type: String,
             default: "",
         },
+
+        packing: {
+            type: String,
+            default: "",
+        },
+
         assignedPicker: {
             type: mongoose.SchemaTypes.ObjectId,
             ref: "Admin",
         },
+
         billItems: {
             type: [mongoose.SchemaTypes.ObjectId],
             ref: "BillItems",

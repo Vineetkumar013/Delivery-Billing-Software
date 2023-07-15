@@ -55,6 +55,29 @@ const orderSchema = new mongoose.Schema(
             type: Object,
             default: {},
         },
+        orderTotal: {
+            type: Number,
+            // required: true,
+            default:""
+        },
+        paymentStatus: {
+            type: String,
+            default: "pending",
+            enum: ["pending", "paid", "failed"],
+        },
+        shippingAddress: {
+            type: String,
+            // required: true,
+            default:""
+        },
+        shippingMethod: {
+            type: String,
+            // required: true,
+            default:""
+        },
+        trackingNumber: {
+            type: String,
+        },
     },
     { timestamps: true }
 );

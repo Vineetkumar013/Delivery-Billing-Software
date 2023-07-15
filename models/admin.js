@@ -14,7 +14,7 @@ const schema = new mongoose.Schema(
             type: String,
             default: "",
         },
-        role: { type: String, default: "" },
+        role: { type: String,  default: "admin" },
         employeeId: {
             type: String,
             default: "",

@@ -1,4 +1,4 @@
-const User = require("../models/admin"); // Import the User model
+const User = require("../models/user"); // Import the User model
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { secret, accessTokenTime } = require("../configs/auth.configs");
@@ -6,78 +6,88 @@ const { createResponse } = require("../utils/response");
 
 // Define a signup function that creates a new user document in the database
 const signup = async (req, res) => {
-    const { email } = req.body;
     try {
-        // Check if a user with the given email already exists in the database
-        const existingUser = await User.findOne({ email });
-
-        if (existingUser) {
-            return res.status(409).json({ message: "Email already in use" });
-        }
-        if (req.body.employeeId) {
-            const employeeId = await User.findOne({
-                employeeId: req.body.employeeId,
+        const { email, mobile, password, confirmPassword, name } = req.body;
+        console.log(req.body);
+        const emailExists = await User.findOne({ email,role: ["ADMIN"] });
+        if (emailExists) {
+            return res.status(401).json({
+                message: "Email Number Already Exists",
             });
-            if (employeeId) {
-                return res
-                    .status(409)
-                    .json({ message: "EmployeeId already in use" });
+        }
+
+        if (mobile) {
+            const existingMobile = await User.findOne({ mobile });
+            if (existingMobile) {
+                return createResponse(res, 409, "Mobile already in use");
             }
         }
-        req.body.password = bcrypt.hashSync(req.body.password, 10);
 
-        // Create a new user document in the database with the given information
-        const newUser = new User(req.body);
-        await newUser.save();
+        if (password !== confirmPassword) {
+            return res.status(400).json({
+                message: "Passwords do not match",
+            });
+        }
 
-        // Send a response indicating that the user was successfully created
-        return res.status(200).json({
-            message: "User created successfully",
-            // token: accessToken,
-        });
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const otp = Math.floor(1000 + Math.random() * 9000);
+        const user = await User.create({ email: email, employeeId: employeeId, password: hashedPassword, otp:otp ,name:name });
+        console.log(user);
+        res.status(200).json({ message: "OTP is Send ", OTP: otp, data: user });
     } catch (err) {
-        console.error(err);
-        return res.status(500).json({ message: "Internal server error" });
+        console.log(err)
+        res.status(400).json({
+            message: err.message,
+            
+        });
     }
 };
 
 // Define a login function that checks the user's credentials and logs them in
 const login = async (req, res) => {
-    const { employeeId, password, role } = req.body;
+ const { email, password } = req.body;
 
-    try {
-        // Check if a user with the given employeeId exists in the database
-        const user = await User.findOne({ employeeId });
+  try {
+    // Check if a user with the given employeeId exists in the database
+    const user = await User.findOne({ email, role: ["ADMIN"] });
 
-        if (!user) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
-        if (role !== user.role) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
-        console.log(user.password, password);
-        // Check if the password matches the one stored in the database
-        const isPasswordValid = bcrypt.compareSync(password, user.password);
-
-        if (!isPasswordValid) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
-        const token = jwt.sign({ id: user._id }, secret, {
-            expiresIn: accessTokenTime,
-        });
-        // Send a response indicating that the user was successfully created
-        return res.status(200).json({
-            message: "User logged In successfully",
-            token: token,
-            data: user,
-        });
-        // If the credentials are valid, send a response indicating that the login was successful
-        // return res.status(200).json({ message: "Login successful" });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ message: "Internal server error" });
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
     }
+
+    // Check if the role matches the one stored in the database
+    if (role !== user.role) {
+      return res.status(401).json({ message: "Role not be Matched" });
+    }
+
+    // Check if the password matches the one stored in the database
+    const isPasswordValid = bcrypt.compareSync(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Create a token
+    const token = jwt.sign({ id: user._id }, secret, {
+      expiresIn: accessTokenTime,
+    });
+
+    // Send a response indicating that the user was successfully logged in
+    return res.status(200).json({
+      message: "ADMIN logged in successfully",
+      token,
+      data: user,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 };
+
+
+
 const getAdmins = async (req, res) => {
     try {
         let query = { ...req.query };

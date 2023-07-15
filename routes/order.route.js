@@ -10,6 +10,7 @@ const {
     getOrderSummary,
     getOrders,
     deleteOrder,
+    TodayOrder,
 } = require("../controllers/order.controller");
 
 // Routes for handling orders
@@ -20,4 +21,5 @@ router.post("/orders", createOrder);
 router.put("/orders/:id", updateOrderToPaid);
 router.put("/orders/:id/deliver", updateOrderToDelivered);
 router.delete("/orders/", deleteOrder);
+router.get("/orders/today/:date", TodayOrder);
 module.exports = router;
