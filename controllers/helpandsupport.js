@@ -12,7 +12,8 @@ exports.AddQuery = async(req,res) => {
         }
     const Data = await helpandSupport.create(data);
     res.status(200).json({
-        message:Data
+        message: "Add query successfully",
+        data: Data
     })
     }catch(err){
         console.log(err);

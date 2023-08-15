@@ -58,7 +58,7 @@ const orderSchema = new mongoose.Schema(
         orderTotal: {
             type: Number,
             // required: true,
-            default:""
+            default: ""
         },
         paymentStatus: {
             type: String,
@@ -68,16 +68,19 @@ const orderSchema = new mongoose.Schema(
         shippingAddress: {
             type: String,
             // required: true,
-            default:""
+            default: ""
         },
         shippingMethod: {
             type: String,
             // required: true,
-            default:""
+            default: ""
         },
         trackingNumber: {
             type: String,
         },
+        deliveryOTP: {
+            type: String,
+        }
     },
     { timestamps: true }
 );

@@ -20,6 +20,9 @@ const billingSchema = new mongoose.Schema(
             default: "",
             required: true,
         },
+        partName: {
+            type: String,
+        },
         billingAddress: {
             type: String,
             default: "",
@@ -70,16 +73,15 @@ const billingSchema = new mongoose.Schema(
             default: "",
         },
 
-        packing: {
-            type: String,
-            default: "",
-        },
+        // packing: {
+        //     type: String,
+        //     default: "",
+        // },
 
-        assignedPicker: {
+        assignedBillitem: {
             type: mongoose.SchemaTypes.ObjectId,
-            ref: "Admin",
+            ref: "user",
         },
-
         billItems: {
             type: [mongoose.SchemaTypes.ObjectId],
             ref: "BillItems",
@@ -106,7 +108,8 @@ const billingSchema = new mongoose.Schema(
             },
             pickerAssignee: {
                 type: mongoose.SchemaTypes.ObjectId,
-                ref: "Picker",
+                // ref: "Picker",
+                ref: "user"
             },
             assigned: {
                 type: Boolean,
@@ -148,7 +151,7 @@ const billingSchema = new mongoose.Schema(
             },
             verifierAssignee: {
                 type: mongoose.SchemaTypes.ObjectId,
-                ref: "Admin",
+                ref: "VerifierBill",
             },
 
             comment: {
@@ -186,7 +189,7 @@ const billingSchema = new mongoose.Schema(
             },
             packerAssignee: {
                 type: mongoose.SchemaTypes.ObjectId,
-                ref: "Admin",
+                ref: "user",
             },
             packet: {
                 type: String,
@@ -234,7 +237,7 @@ const billingSchema = new mongoose.Schema(
             },
             dispatchAssignee: {
                 type: mongoose.SchemaTypes.ObjectId,
-                ref: "Admin",
+                ref: "user",
             },
             comment: {
                 type: String,
@@ -265,7 +268,31 @@ const billingSchema = new mongoose.Schema(
             },
         },
     },
-    { timestamps: true }
+{ timestamps: true }
 );
 
 module.exports = mongoose.model("Billing", billingSchema);
+
+// const billingSchema = new mongoose.Schema({
+// "Bill Date": String,
+// "Bill No.": String,
+// "Party Name": String,
+// "Address Detail": String,
+// "Phone No.": Number,
+// "Bill Amount": Number,
+// "MR Name": String,
+// "Area": String,
+// "Rout": String,
+// "Wight": Number,
+// "Payment Method": String,
+// "Expected Del. Date": Number,
+// "Item Name": String,
+// "MRP": Number,
+// "Batch": String,
+// "Exp.": String,
+// "Quantity": Number,
+// "Pillot No.": String
+// },
+// { timestamps: true }
+// );
+// module.exports = mongoose.model("Billing", billingSchema);

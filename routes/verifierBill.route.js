@@ -2,15 +2,15 @@ const express = require("express");
 const router = express.Router();
 const { authJwt } = require("../middleware");
 const {
-    updateBillingPicker,
-    getAllBillOfPicker,
+    updateBillingVerifier,
+    getAllBillOfVerifier,
     assignBillToPacker,
     Verifysignup,
     Verifylogin,
 } = require("../controllers/verifyBill.controller");
 
 // // Get all verifier-bills
-router.get("/verifier-bills", getAllBillOfPicker);
+router.get("/verifier-bills", getAllBillOfVerifier);
 router.post("/signup", Verifysignup);
 router.post("/login", Verifylogin);
 
@@ -21,7 +21,7 @@ router.post("/login", Verifylogin);
 // router.post("/verifier-bills", [authJwt.isAdmin], createVerifierBill);
 
 // // Update a product by ID
-router.put("/verifier-bills/:id", updateBillingPicker);
+router.put("/verifier-bills/:id", updateBillingVerifier);
 router.put("/assign-bill/packer/:id", assignBillToPacker);
 
 // // Delete a product by ID

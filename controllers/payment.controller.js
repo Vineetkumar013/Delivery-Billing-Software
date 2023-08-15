@@ -1,17 +1,16 @@
 const razorpay = require("razorpay");
-
 const uuid = require("uuid");
 const id = uuid.v4();
 const payment = require("../models/payment");
 const ProductOrder = require("../models/order");
 const { createResponse } = require("../utils/response");
 require("dotenv").config();
-const Razorpay = new razorpay({
-    key_id: process.env.RAZORPAY_ACCESS_KEY,
-    // "rzp_live_oe2m9rifPN1OM5",
-    key_secret: process.env.RAZORPAY_SECRET_KEY,
-    // "lVgPoYfEbRchEnFISM6yJAdr",
-});
+// const Razorpay = new razorpay({
+//     key_id: process.env.RAZORPAY_ACCESS_KEY,
+//     // "rzp_live_oe2m9rifPN1OM5",
+//     key_secret: process.env.RAZORPAY_SECRET_KEY,
+//     // "lVgPoYfEbRchEnFISM6yJAdr",
+// });
 
 exports.createPaymentOrder = async (req, res) => {
     try {
@@ -26,16 +25,16 @@ exports.createPaymentOrder = async (req, res) => {
             partial_payment: false,
         };
         console.log(data);
-        const result = await Razorpay.orders.create(data);
-        console.log(result);
+        // const result = await Razorpay.orders.create(data);
+        // console.log(result);
 
         const DBData = {
             userId: req.user._id,
             name: req.user.name,
-            payment_Id: result.id,
+            // payment_Id: result.id,
             amount: req.body.amount,
-            amount_paid: result.amount,
-            receipt: result.receipt,
+            // amount_paid: result.amount,
+            // receipt: result.receipt,
             order: req.params.id,
             paymentMethod: req.body.paymentMethod,
             status: req.body.status,
@@ -54,24 +53,27 @@ exports.createPaymentOrder = async (req, res) => {
     }
 };
 
-exports.getPayments = async (req, res) => {
-    try {
-        let query = {};
-        if (req.query.userId) {
-            query.userId = req.query.userId;
-        }
 
-        const Data = await payment.find(query).lean();
-        if (Data.length === 0) {
-            return createResponse(res, 200, "payment not found");
-        }
-        createResponse(res, 200, "payment found", Data);
-    } catch (err) {
-        console.log(err);
-        res.state(400).json({
-            message: err.message,
-        });
+exports.getPayments = async (req, res) => {
+  const { userId } = req.query;
+
+  try {
+    const payments = await payment.find({ userId }).lean();
+
+    if (payments.length === 0) {
+      return createResponse(res, 200, "No payments found for the user");
     }
+
+    const paymentStatus = payments.map((payment) => ({
+      payment: payment,
+    //   status: payment.status,
+    }));
+
+    return createResponse(res, 200, "Payment statuses retrieved successfully", paymentStatus);
+  } catch (err) {
+    console.error(err);
+    return createResponse(res, 500, "Internal server error");
+  }
 };
 
 exports.getPayment = async (req, res) => {
@@ -111,3 +113,4 @@ exports.updatePayment = async (req, res) => {
         createResponse(res, 500, "Server Error");
     }
 };
+

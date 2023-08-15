@@ -5,11 +5,11 @@ const { secret, accessTokenTime } = require("../configs/auth.configs");
 const { createResponse } = require("../utils/response");
 
 // Define a signup function that creates a new user document in the database
-const signup = async (req, res) => {
+const AdminSignup = async (req, res) => {
     try {
         const { email, mobile, password, confirmPassword, name } = req.body;
         console.log(req.body);
-        const emailExists = await User.findOne({ email,role: ["ADMIN"] });
+        const emailExists = await User.findOne({ email, role: "ADMIN" });
         if (emailExists) {
             return res.status(401).json({
                 message: "Email Number Already Exists",
@@ -31,61 +31,69 @@ const signup = async (req, res) => {
 
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
+        const confirmhashedPassword = await bcrypt.hash(password, 10);
 
         const otp = Math.floor(1000 + Math.random() * 9000);
-        const user = await User.create({ email: email, employeeId: employeeId, password: hashedPassword, otp:otp ,name:name });
+        const user = await User.create({
+            email: email,
+            password: hashedPassword,
+            confirmhashedPassword: confirmhashedPassword,
+            otp: otp,
+            name: name,
+            role: "ADMIN"
+        });
         console.log(user);
         res.status(200).json({ message: "OTP is Send ", OTP: otp, data: user });
     } catch (err) {
         console.log(err)
         res.status(400).json({
             message: err.message,
-            
+
         });
     }
 };
 
 // Define a login function that checks the user's credentials and logs them in
-const login = async (req, res) => {
- const { email, password } = req.body;
+const Adminlogin = async (req, res) => {
+    const { email, password } = req.body;
 
-  try {
-    // Check if a user with the given employeeId exists in the database
-    const user = await User.findOne({ email, role: ["ADMIN"] });
+    try {
+        // Check if a user with the given employeeId exists in the database
+        const user = await User.findOne({ email, role: "ADMIN" });
 
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+        if (!user) {
+            return res.status(401).json({ message: "User not found" });
+        }
+
+        // Check if the role matches the one stored in the database
+        const role = "ADMIN"
+        if (role !== user.role) {
+            return res.status(401).json({ message: "Role not be Matched" });
+        }
+
+        // Check if the password matches the one stored in the database
+        const isPasswordValid = bcrypt.compareSync(password, user.password);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        // Create a token
+        const token = jwt.sign({ id: user._id }, secret, {
+            expiresIn: accessTokenTime,
+        });
+
+        // Send a response indicating that the user was successfully logged in
+        return res.status(200).json({
+            message: "ADMIN logged in successfully",
+            token,
+            data: user,
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Internal server error" });
     }
-
-    // Check if the role matches the one stored in the database
-    if (role !== user.role) {
-      return res.status(401).json({ message: "Role not be Matched" });
-    }
-
-    // Check if the password matches the one stored in the database
-    const isPasswordValid = bcrypt.compareSync(password, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-
-    // Create a token
-    const token = jwt.sign({ id: user._id }, secret, {
-      expiresIn: accessTokenTime,
-    });
-
-    // Send a response indicating that the user was successfully logged in
-    return res.status(200).json({
-      message: "ADMIN logged in successfully",
-      token,
-      data: user,
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Internal server error" });
-  }
 };
-
 
 
 const getAdmins = async (req, res) => {
@@ -149,8 +157,8 @@ const deleteAdmins = async (req, res) => {
 };
 
 module.exports = {
-    signup,
-    login,
+    AdminSignup,
+    Adminlogin,
     getAdmin,
     getAdmins,
     deleteAdmins,

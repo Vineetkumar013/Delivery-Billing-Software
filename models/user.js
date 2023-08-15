@@ -13,24 +13,26 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      // required: true,
+      required: true,
     },
     otp: {
       type: String,
     },
     role: {
       type: String,
-      enum: ["USER", "PICKER", "ADMIN", "PACKER", "DISPATCH-EMPLOYEE", "VERFICATION-EMPLOYEE","DELIVER"],
+      enum: ["USER", "PICKER", "ADMIN", "PACKER", "DISPATCH", "VERFIER", "DELIVERY"],
       default: "USER",
     },
     employeeId: {
       type: String,
-      default:""
+      default: ""
     },
     confirmPassword: {
       type: String,
     },
-
+    location: {
+      type: Array
+    },
     mobile: {
       type: String,
       default: "",
@@ -64,9 +66,12 @@ const userSchema = new mongoose.Schema(
     verification: {
       type: String,
       default: "Pending",
-      enum: ["Pending", "Approved", "Rejected", "Vineet"],
+      enum: ["Pending", "Approved", "Rejected",],
     },
+    reason: {
+      type: String,
+    }
   },
   { timestamps: true }
 );
-module.exports = mongoose.model("users", userSchema);
+module.exports = mongoose.model("user", userSchema);

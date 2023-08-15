@@ -8,8 +8,9 @@ const {
     deleteBillItem,
 } = require("../controllers/billItem.controller");
 const { validate } = require("../middleware");
+const { verifyToken } = require("../middleware/authJwt");
 // CREATE - POST /billitems
-router.post("/billitems", [validate.billItemBodies], createBillItem);
+router.post("/billitems", [validate.billItemBodies], verifyToken, createBillItem);
 
 // READ - GET /billitems/:id
 router.get("/billitems/:id", getBillItem);

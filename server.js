@@ -20,11 +20,11 @@ app.get("/", (req, res) => {
     res.send("Hello World!");
 });
 app.use("/api/v1/", require("./routes/routes"));
-const errorHandler = (err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send("Something broke!");
-};
-app.use(errorHandler);
+// const errorHandler = (err, req, res, next) => {
+//     console.error(err.stack);
+//     res.status(500).send("Something broke!");
+// };
+// app.use(errorHandler);
 mongoose.Promise = global.Promise;
 mongoose.set("strictQuery", true);
 mongoose

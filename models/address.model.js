@@ -31,6 +31,10 @@ const addressSchema = new mongoose.Schema({
         type: ObjectId,
         ref: "users",
     },
+    OrderId:{
+        type: ObjectId,
+        ref: "Order",
+    }
 });
 
 module.exports = mongoose.model("Address", addressSchema);

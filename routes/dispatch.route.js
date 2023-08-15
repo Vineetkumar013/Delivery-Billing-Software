@@ -10,7 +10,7 @@ const {
 const { authJwt } = require("../middleware");
 
 router.get("/dispatch-bills", getAllBillOfDispatch);
-router.post("/login", dispatchlogin);
+// router.post("/login", dispatchlogin);
 router.post("/signup", dispatchsignup);
 router.put("/assign-bill/dispatch/:id", assignBillToDispatch);
 router.put("/dispatch-bills/:id", updateBillingDispatch);

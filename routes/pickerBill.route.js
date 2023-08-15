@@ -4,18 +4,19 @@ const {
     updateBillingPicker,
     getAllBillOfPicker,
     assignBillToVerifier,
-    Pickerlogin,
+    // Pickerlogin,
     Pickersignup,
+    // createPickerBill,
 } = require("../controllers/pickerBillController");
 const { authJwt } = require("../middleware");
 // Get all picker bills
 router.get("/picker-bills", getAllBillOfPicker);
 router.put("/assign-bill/verifier/:id", assignBillToVerifier);
-router.post("/login", Pickerlogin);
+// router.post("/login", Pickerlogin);
 router.post("/signup", Pickersignup);
 
 // Create a new picker bill
-// router.post("/picker-bills", [authJwt.isAdmin], createPickerBill);
+// router.post("/picker-bills", /* [authJwt.isAdmin], */ createPickerBill);
 // router.put("/picker-bills/assign-bill/:id", assignBillToVerifier);
 // Update a picker bill
 router.put("/picker-bills/:id", updateBillingPicker);

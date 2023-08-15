@@ -3,7 +3,7 @@ const billSchema = new mongoose.Schema(
     {
         verifier: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Admin",
+            ref: "user",
         },
         pickerBill: {
             type: mongoose.Schema.Types.ObjectId,
@@ -29,7 +29,7 @@ const billSchema = new mongoose.Schema(
         },
         assignedPacker: {
             type: mongoose.SchemaTypes.ObjectId,
-            ref: "Admin",
+            ref: "user",
         },
     },
     { timestamps: true }

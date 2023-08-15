@@ -1,10 +1,15 @@
 const Billing = require("../models/billing");
 const { createResponse } = require("../utils/response");
 const Notification = require("../models/notification");
+const User = require("../models/user");
+// const xlsx = require('xlsx');
+
 // GET /api/billings
 const getAllBillings = async (req, res) => {
+    const { _id } = req.user
     try {
-        let queryObj = { ...req.query };
+        const user = await User.findById(_id);
+        let queryObj = { ...req.query, userId: user.id };
         if (req.query.pickedStatus) {
             queryObj["picker.status"] = req.query.pickedStatus;
             delete queryObj.pickedStatus;
@@ -116,21 +121,21 @@ const deleteBilling = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const billing = await Billing.findById(id);
+        const billing = await Billing.findByIdAndDelete(id);
 
         if (!billing) {
             createResponse(res, 404, "Bill not found");
             return;
         }
-
-        await billing.remove();
-
         createResponse(res, 200, "Bill deleted successfully");
+        
     } catch (error) {
         console.log(error);
         createResponse(res, 500, "Server error");
     }
 };
+
+
 const assignBillToPicker = async (req, res) => {
     const { id } = req.params;
     const { pickerId } = req.body;
@@ -149,10 +154,41 @@ const assignBillToPicker = async (req, res) => {
             message: `You have been assigned a bill`,
         });
         console.log(billing.picker.pickerAssignee);
-        createResponse(res, 200, "Bill assigned to picker successfully");
+        createResponse(res, 200, "Bill assigned to picker successfully", notification);
     } catch (error) {
         console.log(error);
         createResponse(res, 500, "Server error");
+    }
+};
+
+// GET picker information for a specific billing
+// router.get("/billing/:id/picker", 
+const getPickerByBilling = async (req, res) => {
+    try {
+        const billingId = req.params.id;
+        const billing = await Billing.findById(billingId).populate("picker.pickerAssignee");
+        if (!billing) {
+            return res.status(404).json({ message: "Billing not found" });
+        }
+
+        if (!billing.picker.assigned) {
+            return res.status(404).json({ message: "No picker assigned for this billing" });
+        }
+
+        const pickerInfo = {
+            pickerAssignee: billing.picker.pickerAssignee,
+            status: billing.picker.status,
+            reassignStatus: billing.picker.reassignStatus,
+            numberOfTrays: billing.picker.numberOfTrays,
+            comment: billing.picker.comment,
+            acceptanceStatus: billing.picker.acceptanceStatus,
+            reassign: billing.picker.reassign,
+        };
+
+        res.json(pickerInfo);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal server error" });
     }
 };
 
@@ -163,4 +199,6 @@ module.exports = {
     updateBilling,
     deleteBilling,
     assignBillToPicker,
+    getPickerByBilling
 };
+

@@ -12,7 +12,7 @@ router.get("/addresses/:userId", addressController.getAddresses);
 router.post("/addresses", addressController.createAddress);
 
 // Update an existing address
-router.put("/addresses/:addressId", addressController.updateAddress);
+router.put("/addresses/:id", addressController.updateAddress);
 
 // Delete an address
 router.delete("/addresses/:addressId", addressController.deleteAddress);

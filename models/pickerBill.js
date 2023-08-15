@@ -4,7 +4,7 @@ const couponSchema = new mongoose.Schema(
     {
         picker: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Admin",
+            ref: "User",
         },
         billId: {
             type: mongoose.Schema.Types.ObjectId,
@@ -26,7 +26,7 @@ const couponSchema = new mongoose.Schema(
         },
         assignedVerifier: {
             type: mongoose.SchemaTypes.ObjectId,
-            ref: "Admin",
+            ref: "User",
         },
         reassign: {
             type: Boolean,

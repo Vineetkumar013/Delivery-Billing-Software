@@ -13,7 +13,7 @@ const Verifysignup = async (req, res) => {
     try {
         const { email, employeeId, password, confirmPassword, name,mobile } = req.body;
         console.log(req.body);
-        const emailExists = await User.findOne({ email,role: "PICKER" });
+        const emailExists = await User.findOne({ email,role: "VERFIER" });
         if (emailExists) {
             return res.status(401).json({
                 message: "Email Number Already Exists",
@@ -51,7 +51,7 @@ const Verifysignup = async (req, res) => {
             otp: otp,
             name: name,
             mobile: mobile,
-            role: "PICKER"
+            role: "VERFIER"
         });
         console.log(user);
         res.status(200).json({ message: "OTP is Send ", OTP: otp, data: user });
@@ -105,77 +105,137 @@ const Verifylogin = async (req, res) => {
   }
 };
 
-const getAllBillOfPicker = async (req, res) => {
-    try {
-        const query = {};
-        if (req.query.verifierAssignee) {
-            query["verifier.verifierAssignee"] = new ObjectId(
-                req.query.verifierAssignee
-            );
-        }
-        if (req.query.status) {
-            query["verifier.status"] = req.query.status;
-        }
+// const getAllBillOfVerifier = async (req, res) => {
+//     // const {_id} = req.user
+//     try {
+//         // const user = User.findById(_id)
+//         const query = {};
+//         if (req.query.verifierAssignee) {
+//             query["verifier.verifierAssignee"] = new ObjectId(
+//                 req.query.verifierAssignee
+//             );
+//         }
+//         if (req.query.status) {
+//             query["verifier.status"] = req.query.status;
+//         }
 
-        if (req.query.acceptanceStatus) {
-            query["verifier.acceptanceStatus"] = req.query.acceptanceStatus;
-        }
-        if (req.query.assigned && req.query.assigned === "true") {
-            query["verifier.assigned"] = true;
-        }
-        if (req.query.assigned && req.query.assigned === "false") {
-            query["verifier.assigned"] = false;
-        }
-        const pipeline = [
-            {
-                $match: query,
-            },
-            { $sort: { updatedAt: -1 } },
-            {
-                $lookup: {
-                    from: "billitems",
-                    localField: "billItems",
-                    foreignField: "_id",
-                    as: "billItems",
-                },
-            },
-            // {
-            //     $project: {
-            //         _id: 1,
-            //         billingDate: 1,
-            //         totalAmount: 1,
-            //         picker: {
-            //             pickerAssignee: 1,
-            //         },
-            //         billItems: {
-            //             _id: 1,
-            //             itemName: 1,
-            //             itemPrice: 1,
-            //         },
-            //     },
-            // },
-        ];
-        const billings = await Billing.aggregate(pipeline);
-        if (!billings || billings.length === 0) {
-            createResponse(res, 404, "No bills found");
-            return;
-        }
-        createResponse(res, 200, "All bills fetched successfully", billings);
-    } catch (error) {
-        console.log(error);
-        createResponse(res, 500, "Server error");
+//         if (req.query.acceptanceStatus) {
+//             query["verifier.acceptanceStatus"] = req.query.acceptanceStatus;
+//         }
+//         if (req.query.assigned && req.query.assigned === "true") {
+//             query["verifier.assigned"] = true;
+//         }
+//         if (req.query.assigned && req.query.assigned === "false") {
+//             query["verifier.assigned"] = false;
+//         }
+//         const pipeline = [
+//             {
+//                 $match: query,
+//             },
+//             { $sort: { updatedAt: -1 } },
+//             {
+//                 $lookup: {
+//                     from: "billitems",
+//                     localField: "billItems",
+//                     foreignField: "_id",
+//                     as: "billItems",
+//                 },
+//             },
+//             // {
+//             //     $project: {
+//             //         _id: 1,
+//             //         billingDate: 1,
+//             //         totalAmount: 1,
+//             //         picker: {
+//             //             pickerAssignee: 1,
+//             //         },
+//             //         billItems: {
+//             //             _id: 1,
+//             //             itemName: 1,
+//             //             itemPrice: 1,
+//             //         },
+//             //     },
+//             // },
+//         ];
+//         const billings = await Billing.aggregate(pipeline);
+//         if (!billings || billings.length === 0) {
+//             createResponse(res, 404, "No bills found");
+//             return;
+//         }
+//         createResponse(res, 200, "All bills fetched successfully", billings);
+//     } catch (error) {
+//         console.log(error);
+//         createResponse(res, 500, "Server error");
+//     }
+// };
+
+const getAllBillOfVerifier = async (req, res) => {
+  try {
+    const query = {};
+    if (req.query.verifierAssignee) {
+      query["verifier.verifierAssignee"] = new ObjectId(
+        req.query.verifierAssignee
+      );
     }
-};
+    if (req.query.status) {
+      query["verifier.status"] = req.query.status;
+    }
+    if (req.query.acceptanceStatus) {
+      query["verifier.acceptanceStatus"] = req.query.acceptanceStatus;
+    }
+    if (req.query.assigned && req.query.assigned === "true") {
+      query["verifier.assigned"] = true;
+    }
+    if (req.query.assigned && req.query.assigned === "false") {
+      query["verifier.assigned"] = false;
+    }
 
-const updateBillingPicker = async (req, res) => {
+    const pipeline = [
+      {
+        $match: query,
+      },
+      { $sort: { updatedAt: -1 } },
+      {
+        $lookup: {
+          from: "billitems",
+          localField: "billItems",
+          foreignField: "_id",
+          as: "billItems",
+        },
+      },
+      {
+        $project: {
+          "verifier.verifierAssignee": 1,
+          "verifier.status": 1,
+          "verifier.acceptanceStatus": 1,
+          "verifier.assigned": 1,
+        },
+      },
+    ];
+
+    const billings = await Billing.aggregate(pipeline);
+
+    if (!billings || billings.length === 0) {
+      return res.status(404).json({ message: "No bills found" });
+    }
+
+    res.status(200).json({
+      message: "All bills fetched successfully",
+      billings,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+const updateBillingVerifier = async (req, res) => {
     try {
         const { id } = req.params;
 
         const billing = await Billing.findById(id);
 
-        const { status, acceptanceStatus, packet, reassign, comment } =
+        const { status, acceptanceStatus, packet, reassign,urgencyColor, comment } =
             req.body;
-        req.body;
         if (!billing) {
             return res.status(404).json({
                 success: false,
@@ -186,10 +246,10 @@ const updateBillingPicker = async (req, res) => {
 
         bill.status = status || bill.status;
         bill.acceptanceStatus = acceptanceStatus || bill.acceptanceStatus;
-        // bill.packet = packet || bill.packet;
+        bill.packet = packet || bill.packet;
         bill.reassign = reassign || bill.reassign;
         bill.comment = comment || bill.comment;
-        // bill.urgencyColor = urgencyColor || bill.urgencyColor;
+        bill.urgencyColor = urgencyColor || bill.urgencyColor;
         await billing.save();
         if (billing.reassign === "Yes") {
             const notification = await Notification.create({
@@ -213,6 +273,7 @@ const updateBillingPicker = async (req, res) => {
         });
     }
 };
+
 const assignBillToPacker = async (req, res) => {
     const { id } = req.params;
     const { packerId } = req.body;
@@ -233,7 +294,7 @@ const assignBillToPacker = async (req, res) => {
         });
         console.log(notification);
         console.log(billing.packer.packerAssignee);
-        createResponse(res, 200, "Bill assigned to packer successfully");
+        createResponse(res, 200, "Bill assigned to packer successfully", billing.packer);
     } catch (error) {
         console.log(error);
         createResponse(res, 500, "Server error");
@@ -243,7 +304,7 @@ const assignBillToPacker = async (req, res) => {
 module.exports = {
     Verifysignup,
     Verifylogin,
-    updateBillingPicker,
-    getAllBillOfPicker,
+    updateBillingVerifier,
+    getAllBillOfVerifier,
     assignBillToPacker,
 };

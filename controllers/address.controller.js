@@ -1,10 +1,13 @@
 const Address = require("../models/address.model");
+
+const { populate } = require("../models/order");
+
 const { createResponse } = require("../utils/response");
 
 // Create a new address
 exports.createAddress = async (req, res) => {
     try {
-        const { address, userId, city, state, pinCode, landMark, street } =
+        const { address, userId, city, state, pinCode, landMark, street,OrderId } =
             req.body;
 
         const newAddress = new Address({
@@ -15,6 +18,7 @@ exports.createAddress = async (req, res) => {
             landMark,
             street,
             userId,
+            OrderId
         });
 
         await newAddress.save();
@@ -40,7 +44,7 @@ exports.getAddresses = async (req, res) => {
     try {
         const userId = req.params.id;
 
-        const addresses = await Address.findOne({ user: userId });
+        const addresses = await Address.findOne({ user: userId }).populate("OrderId")
         return createResponse(
             res,
             200,
@@ -57,9 +61,10 @@ exports.getAddresses = async (req, res) => {
         );
     }
 };
+
 exports.getAddressesById = async (req, res) => {
     try {
-        const addresses = await Address.findOne({ _id: req.params.id });
+        const addresses = await Address.findOne({ _id: req.params.id }).populate("OrderId")
         return createResponse(
             res,
             200,
@@ -84,11 +89,11 @@ exports.updateAddress = async (req, res) => {
         const addressId = req.params.id;
 
         const updatedAddress = await Address.findByIdAndUpdate(
-            addressId,
-            req.body,
+            {_id:addressId},
+            {address, city, state, pinCode, landMark, street,},
             { new: true }
         );
-
+        console.log(updatedAddress)
         return createResponse(
             res,
             200,

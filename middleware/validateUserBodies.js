@@ -30,12 +30,12 @@ const signUp = async (req, res, next) => {
         if (!req.body.name) {
             return res.status(400).json({ message: "Name is required" });
         }
-        if (!req.body.role) {
+        /* if (!req.body.role) {
             return res.status(400).json({ message: "Role is required" });
-        }
-        if (!req.body.department) {
+        } */
+/*         if (!req.body.department) {
             return res.status(400).json({ message: "Department is required" });
-        }
+        } */
         next();
     } catch (err) {
         console.log(err);

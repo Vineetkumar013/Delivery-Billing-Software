@@ -2,9 +2,13 @@ const Order = require("../models/order");
 const { createResponse } = require("../utils/response");
 const Notification = require("../models/notification");
 const Bill = require("../models/billing");
+const BillItem = require("../models/billItem")
 const Admin = require("../models/admin");
+const User = require("../models/user")
 const mongoose = require("mongoose");
-const { query } = require("express");
+const OTP = require("../services/otp")
+const billing = require("../models/billing");
+const Payment = require("../models/payment")
 const ObjectId = mongoose.Types.ObjectId;
 
 const getOrders = async (req, res) => {
@@ -23,7 +27,7 @@ const getOrders = async (req, res) => {
                     from: "users",
                     localField: "userId",
                     foreignField: "_id",
-                    as: "userId",
+                    as: "user",
                 },
             },
             {
@@ -45,101 +49,161 @@ const getOrders = async (req, res) => {
                     as: "billItems",
                 },
             },
+            {
+                $addFields: {
+                    billingAddress: "$bill.billingAddress",
+                    weight: "$bill.weight",
+                    location: "$bill.location",
+                },
+            },
+            {
+                $project: {
+                    user: { $arrayElemAt: ["$user", 0] }, // Assuming there's only one matching user
+                    bill: 1,
+                    billItems: 1,
+                    billingAddress: 1,
+                    weight: 1,
+                    location: 1,
+                },
+            },
+            {
+                $sort: {
+                    _id: -1 // Sort by the order creation date in descending order (latest first)
+                },
+            },
         ];
 
         const result = await Order.aggregate(pipeline);
 
-        return createResponse(res, 200, "Orders found", result[0]);
+        const orderList = result.map((order) => {
+            return {
+                orderId: order._id,
+                user: order.user,
+                bill: order.bill,
+                billItems: order.billItems,
+            };
+        });
+
+        return res.json({
+            status: 200,
+            message: "Orders found successfully",
+            data: orderList,
+        });
     } catch (error) {
         console.error(error);
         return createResponse(res, 500, "Server Error");
     }
 };
 
+const deliveryDetails = async (req, res) => {
+    try {
+        const order = await Order.findOne({ _id: req.params.id });
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+        const bill = await Bill.findById(order.bill);
+        if (!bill) {
+            return res.status(404).json({ message: "Bill not found" });
+        }
+        const { customerName, billingAddress, mobile, billAmount, location } = bill;
+        const otp = OTP.generateOTP();
+        const billItems = await BillItem.find({ billId: bill._id }).select("itemName quantity mrp location");
+        res.json({ Order: order, customerName, billingAddress, mobile, billAmount, location, billItems, otp });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+
+// const deliveryDetailsVerifyOTP = async (req, res) => {  
+//   try {
+//     const orderId = req.params.orderId;
+//     const { otp } = req.body;
+
+//     const order = await Order.findById(orderId);
+//     if (!order) {
+//       return res.status(404).json({ message: "Order not found." });
+//     }
+
+//     // Check if the order is already delivered
+//     if (order.isDelivered) {
+//       return res.status(400).json({ message: "Order is already delivered." });
+//     }
+
+//     // Compare the provided OTP with the stored OTP
+//     if (otp === order.bill.deliveryOTP) {
+//       // OTP is correct, mark the order as delivered and update deliveredAt timestamp
+//       order.isDelivered = true;
+//       order.deliveredAt = new Date();
+//       await order.save();
+
+//       return res.status(200).json({ message: "OTP verified. Order delivered successfully." });
+//     } else {
+//       return res.status(401).json({ message: "Invalid OTP. Delivery verification failed." });
+//     }
+//   } catch (err) {
+//     console.error("Error verifying OTP:", err);
+//     return res.status(500).json({ message: "An error occurred while verifying OTP." });
+//   }
+// };
+
 const getOrderSummary = async (req, res) => {
     try {
         const { startDate, endDate, userId, uid, status } = req.query;
-        let query = {};
+
+        const query = {};
+
         if (startDate && endDate) {
-            query.createdAt = {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate),
-            };
+            query.deliveredAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
         }
+
         if (userId) {
-            query.userId = new ObjectId(userId);
+            query.userId = userId;
         }
+
         if (uid) {
             query.uid = uid;
         }
+
         if (status) {
             query.deliveryStatus = status;
         }
-        console.log(query);
-        const pipeline = [
-            {
-                $match: query,
-            },
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "userId",
-                    foreignField: "_id",
-                    as: "userId",
-                },
-            },
-            {
-                $lookup: {
-                    from: "billings",
-                    localField: "bill",
-                    foreignField: "_id",
-                    as: "bill",
-                },
-            },
-            {
-                $unwind: "$bill",
-            },
-            {
-                $lookup: {
-                    from: "billitems",
-                    localField: "billItems",
-                    foreignField: "_id",
-                    as: "billItems",
-                },
-            },
 
-            {
-                $group: {
-                    _id: null,
-                    totalReceive: { $sum: { $toDouble: "$receive" } },
-                    totalReturn: { $sum: { $toDouble: "$return" } },
-                    totalShortage: { $sum: { $toDouble: "$shortage" } },
-                    totalBalance: { $sum: { $toDouble: "$balance" } },
-                    orders: { $push: "$$ROOT" },
+        const orders = await Order.find(query)
+            .populate({
+                path: "userId",
+                model: User,
+                select: "-password", // Exclude the password field
+            })
+            .populate("bill")
+            .populate({
+                path: "bill",
+                populate: {
+                    path: "billItems billingAddress location weight",
+                    model: billing,
                 },
-            },
-            {
-                $project: {
-                    _id: 0,
-                    totalReceive: 1,
-                    totalReturn: 1,
-                    totalShortage: 1,
-                    totalBalance: 1,
-                    orders: 1,
-                },
-            },
-        ];
+            });
 
-        const result = await Order.aggregate(pipeline);
+        // Convert orders to list format
+        const orderList = orders.map((order) => {
+            return {
+                orderId: order._id,
+                user: order.userId,
+                bill: order.bill,
+                deliveryStatus: order.deliveryStatus,
+                deliveredAt: order.deliveredAt,
+            };
+        });
 
-    if (result.length === 0 || result[0].orders.length === 0) {
-      return createResponse(res, 404, "No matching orders found");
-    }
-        
-        return createResponse(res, 200, result.length, "Orders found", result[0]);
+        res.json({
+            status: 200,
+            message: "Success",
+            data: orderList
+        });
     } catch (error) {
         console.error(error);
-        return createResponse(res, 500, "Server Error");
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -159,67 +223,77 @@ const getOrderById = async (req, res) => {
     }
 };
 
+
 const createOrder = async (req, res) => {
     try {
-        if (req.body.bill.length == 1) {
+        if (req.body.bill.length === 1) {
+            // Create a single order
             const uid = await Order.find().sort({ createdAt: -1 }).limit(1);
-            if (!uid || uid.length == 0) {
-                req.body.uid = 1;
-            } else {
-                req.body.uid = uid[0].uid + 1;
-            }
-            const order = new Order(req.body);
+            req.body.uid = (!uid || uid.length === 0) ? 1 : uid[0].uid + 1;
 
+            const order = new Order(req.body);
             const createdOrder = await order.save();
+
             const bill = await Bill.findById(req.body.bill);
             bill.deliveryOrder = createdOrder._id;
             bill.dispatch.status = "dispatched";
             bill.dispatch.assigned = true;
             await bill.save();
-            // msg to customer for delivery
+
+            // Generate OTP for single order and store it
+            const otp = OTP.generateOTP();
+            createdOrder.deliveryOTP = otp;
+            await createdOrder.save();
+
+            // Send OTP to the customer
+            //   sendOTPViaSMS(req.body.mobile, otp);
+            // OTP.sendOTP(req.body.mobile, OTP.generateOTP);
+
             await Notification.create({
                 userId: req.body.userId,
                 title: "New Order Assigned",
                 message: "You have been assigned 1 new order.",
             });
-            return createResponse(
-                res,
-                201,
-                "Order created successfully",
-                createdOrder
-            );
+
+            return res.status(201).json({ message: "Order created successfully", order: createdOrder });
         } else {
-            const orders = [];
-            for (let i = 0; i < req.body.bill; i++) {
-                orders.push({
-                    userId: req.body.userId,
-                    uid: req.body.uid + 1,
-                    bill: req.body.bill[i],
-                });
-            }
+            // Create multiple orders
+            const orders = req.body.bill.map((billId) => ({
+                userId: req.body.userId,
+                uid: req.body.uid + 1,
+                bill: billId,
+            }));
+
             const createdOrders = await Order.insertMany(orders);
-            createdOrders.forEach(async (order) => {
+
+            // Update bill and generate OTP for each order
+            for (let i = 0; i < createdOrders.length; i++) {
+                const order = createdOrders[i];
                 const bill = await Bill.findById(order.bill);
                 bill.deliveryOrder = order._id;
                 bill.dispatch.assigned = true;
                 await bill.save();
-            });
+
+                // Generate OTP for each order and store it
+                const otp = OTP.generateOTP();
+                order.deliveryOTP = otp;
+                await order.save();
+                console.log(otp);
+                // Send OTP to the customer
+                OTP.sendOTP(req.body.mobile, OTP.generateOTP);
+            }
 
             await Notification.create({
                 userId: req.body.userId,
                 title: "New Order Assigned",
                 message: `You have been assigned ${createdOrders.length} new orders.`,
             });
-            return createResponse(
-                res,
-                201,
-                "Orders created successfully",
-                createdOrders
-            );
+
+            return res.status(201).json({ message: "Orders created successfully", orders: createdOrders });
         }
     } catch (error) {
         console.error(error);
-        return createResponse(res, 500, "Server Error");
+        return res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -271,10 +345,10 @@ const updateOrderToPaid = async (req, res) => {
     }
 };
 
+
 const updateOrderToDelivered = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
-
         if (!order) {
             return createResponse(res, 404, "Order not found");
         }
@@ -290,6 +364,8 @@ const updateOrderToDelivered = async (req, res) => {
         return createResponse(res, 500, "Server Error");
     }
 };
+
+
 const deleteOrder = async (req, res) => {
     try {
         const order = await Order.deleteMany();
@@ -303,7 +379,7 @@ const deleteOrder = async (req, res) => {
     }
 };
 
-// Today's Orders API - Get orders for today
+
 const TodayOrder = async (req, res) => {
     try {
         const { date } = req.query; // Date parameter passed in the query string
@@ -326,6 +402,99 @@ const TodayOrder = async (req, res) => {
     }
 };
 
+const OrderStatus = async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+        const order = await Order.findById(orderId);
+
+        if (!order) {
+            return res.status(404).json({ error: "Order not found" });
+        }
+
+        res.json({
+            Status: 200,
+            OrderStatus: order.deliveryStatus,
+            message: `Order Status ${order.deliveryStatus}`
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
+const verifyDeliveryOtp = async (req, res) => {
+    const orderId = req.params.orderId;
+    const { otp } = req.body;
+
+    try {
+        // Find the order by ID
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({ message: "Order not found." });
+        }
+        console.log(order)
+        // Check if the order is already delivered
+        if (order.isDelivered) {
+            return res.status(400).json({ message: "Order is already delivered." });
+        }
+        
+        // Compare the provided OTP with the stored OTP
+        if (otp === order.deliveryOTP) {
+            // OTP is correct, mark the order as delivered and update deliveredAt timestamp
+            order.isDelivered = true;
+            order.deliveredAt = new Date();
+            await order.save();
+
+            return res.status(200).json({ message: "OTP verified. Order delivered successfully." });
+        } else {
+            return res.status(401).json({ message: "Invalid OTP. Delivery verification failed." });
+        }
+    } catch (err) {
+        console.error("Error verifying OTP:", err);
+        return res.status(500).json({ message: "An error occurred while verifying OTP." });
+    }
+};
+
+const SubmitOrder = async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        const { paymentStatus, deliveryStatus, description } = req.body;
+
+        if (paymentStatus && ["pending", "paid", "failed"].includes(paymentStatus)) {
+            order.paymentStatus = paymentStatus;
+        }
+
+        if (deliveryStatus && ["pending", "delivered", "cancelled", "returned"].includes(deliveryStatus)) {
+            order.deliveryStatus = deliveryStatus;
+        }
+
+        if (description) {
+            order.description = description;
+        }
+
+        if (req.file) {
+            order.image = {
+                filename: req.file.filename,
+                path: req.file.path,
+            };
+        }
+
+        await order.save();
+
+        res.status(200).json({
+            message: "Order updated successfully",
+            data: order
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
 
 module.exports = {
     getOrderById,
@@ -335,5 +504,10 @@ module.exports = {
     getOrders,
     getOrderSummary,
     deleteOrder,
-    TodayOrder
+    TodayOrder,
+    OrderStatus,
+    deliveryDetails,
+    verifyDeliveryOtp,
+    SubmitOrder,
+    // deliveryDetailsVerifyOTP
 };
